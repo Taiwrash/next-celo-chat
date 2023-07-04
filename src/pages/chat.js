@@ -1,35 +1,33 @@
-import { useState } from 'react';
-import { newKit } from '@celo/contractkit'
+import { useEffect, useState } from 'react'
+import { getMessages } from '../lib/chat-utils'
+import Chatbox from '../components/chatbox'
+import Layout from '../components/layout'
+import useWallet from '../lib/connectWallet'
 
-let kit;
-let goldtoken;
+export default function Chat() {
+  const [messages, setMessages] = useState([])
+  const isConnected = useWallet()
 
-const Chat = () => {
-  const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState([]);
+  useEffect(() => {
+    setMessages(getMessages())
+  }, [])
 
-
-  const sendMessage = async () => {
-    if (!kit) {
-      kit = newKit('https://alfajores-forno.celo-testnet.org');
-      goldtoken = await kit.contracts.getGoldToken();
-    }
-    const oneGold = kit.connection.web3.utils.toWei('1', 'ether')
-    const tx = await goldtoken.transfer('ReceiverAddressHere', oneGold).send({ from: '0x88A8C3A1Daff5f88eD143e7814ac29F5f7e2fe49' });
-    const receipt = await tx.waitReceipt();
-
-    console.log('Transaction receipt: ', receipt);
-    setMessages([...messages, message])
-    setMessage("")
-  };
+  if (!isConnected) {
+    return <div>Connecting...</div>
+  }
 
   return (
-    <div>
-       {/* {messages.map((id, message)=> <p key={id}>{"0x88A8C3A1Daff5f88eD143e7814ac29F5f7e2fe49: " + message}</p>)} */}
-      <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} />
-      <button onClick={sendMessage}>Send</button>
-    </div>
-  );
-};
-
-export default Chat;
+    <Layout>
+      <div>
+        {messages.map((msg, i) => (
+          <div key={i}>
+            <p>
+              <strong>{msg.sender}:</strong> {msg.content}
+            </p>
+          </div>
+        ))}
+        <Chatbox />
+      </div>
+    </Layout>
+  )
+}
